@@ -1,0 +1,4 @@
+OpenAI.txt
+venv/*
+.streamlit/secrets.toml
+.DS_Store
