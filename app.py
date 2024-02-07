@@ -34,6 +34,9 @@ if "assistant" not in st.session_state:
 
 if "thread" not in st.session_state:
     st.session_state.thread = None
+    
+if "user_answers" not in st.session_state:
+    st.session_state.user_answers = 0
 
 # Fixed questions
 fixed_questions = [
@@ -44,13 +47,16 @@ fixed_questions = [
 
 
 def get_name():
-    input_text=st.text_area(label="First, what is your name?", placeholder="First name only is fine.", key="user_name")
+    input_text=st.text_input(label="First, what is your name?", placeholder="First name only is fine.", key="user_name")
     return input_text
 
+def get_answer(key):
+    input_ans=st.text_area(label="Please Answer the following", placeholder="Try your best to answer", key=key)
+    return input_ans
 
 
 
-# Define ConversationState class
+# Define ConversationState classquestion
 class ConversationState:
     def __init__(self):
         self.prompts = []
@@ -106,7 +112,6 @@ if "assistant" not in st.session_state:
     )
     st.success("OpenAI Assistant initialized")
 
-# ... (other code)
 
 if user_name is not None and st.button('Submit'):
     st.spinner("## This is session state before the first call is made")
@@ -122,8 +127,8 @@ if user_name is not None and st.button('Submit'):
     # Upload file to openai
     with open(pdf_file_path, 'rb') as file:
         file_content = file.read()
-
-    file_response = client.files.create(file=file_content, purpose='assistants')
+    file_response = FileContent(file_content)
+    # file_response = client.files.create(file=file_content, purpose='assistants')
     st.session_state.file = file_response
     st.success("File uploaded successfully to OpenAI!")    
     
@@ -132,23 +137,38 @@ if user_name is not None and st.button('Submit'):
         metadata={'session_id': st.session_state.session_id}
     )
 
-    # Loop through fixed questions
+    
+        # Loop through fixed questions
     for index, question in enumerate(fixed_questions):
-        retrieve_answer(question)
-        key = "user_ans" + str(index)
+        # Ques = retrieve_answer(question)
+        # st.write(Ques)
         st.write(question)
-        # Get user's answer
-        user_anss = st.text_input(label="Answer the following question", key=key)
-        # st.write("+++++++++",user_anss)
-        # st.write("========", key)
+        key =  "user_ans" + str(index)
+        user_ans = get_answer(key)
+        user_ans = user_ans =+ index
 
-        # Compare user's answer with expected answer 
-        expected_answer = "Expected answer for the question"
-        feedback = "Correct! Well done!" if user_anss.lower() == expected_answer.lower() else "Oops! That's not quite right."
 
-        # Display feedback to the user
-        st.write("Feedback:", feedback)
-        
-        # Optionally, generate a dynamic prompt based on the user's response
-        dynamic_prompt = f"Based on your answer to the previous question, ask a related question..."
-        retrieve_answer(dynamic_prompt)
+
+
+        # Create a button for the user to submit their answers
+        if st.button("Submit Answers"):
+            # Store the user_answers dictionary in the session state after the loop
+            st.session_state.user_answers = input_ans
+
+
+    # # Check if the user has provided an answer
+    # # if user_anss:
+    #     # Compare user's answer with the expected answer
+    #     expected_answer = "Expected answer for the question"
+    #     feedback = "Correct! Well done!" if user_anss.lower() == expected_answer.lower() else "Oops! That's not quite right."
+
+    #     # Display feedback to the user
+    #     st.write("Feedback:", feedback)
+
+    #     # Optionally, generate a dynamic prompt based on the user's response
+    #     dynamic_prompt = f"Based on your answer to the previous question, ask a related question..."
+    #     dyp = retrieve_answer(dynamic_prompt)
+    #     st.write(dyp)
+    # else:
+    #     st.warning("Please provide an answer before moving to the next question.")
+    #     break  # Stop the loop if the user hasn't answered
