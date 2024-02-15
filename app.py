@@ -3,7 +3,9 @@ import openai
 import uuid
 import time
 from openai import OpenAI
-
+import random
+import requests
+from streamlit_lottie import st_lottie_spinner, st_lottie
 
 # Fixed questions
 fixed_questions = [
@@ -17,6 +19,30 @@ fixed_questions = [
 
 user_name = st.session_state.user_name if 'user_name' in st.session_state else None
 current_question_index = st.session_state.current_question_index if 'current_question_index' in st.session_state else 0
+
+def spinner():   # Animated json spinner
+
+    @st.cache_data
+    def load_lottie_url(url:str):
+        r= requests.get(url)
+        if r.status_code != 200:
+            return
+        return r.json()
+
+
+    lottie_url = "https://lottie.host/65dbbc74-ba39-44fe-97fa-1b7b7fc09cce/pa0DVwSS9k.json"
+    lottie_json = load_lottie_url(lottie_url)
+
+    st_lottie(lottie_json, height=200)
+    time.sleep(5)  # Simulate some processing time
+
+# def spinner():   # Streamlit spinner  (Uncomment this and comment the above function to use this)
+#             # Randomly choose from different "thinking" messages
+#     thinking_messages = ["Thinking...", "Generating response...", "Consulting the AI...", "Analyzing your question..."]
+#     thinking_message = random.choice(thinking_messages)
+#     with st.spinner(thinking_message):
+#         time.sleep(2)  # Simulate some processing time
+
 
 def chatbot(question):
     # Initialize OpenAI client
@@ -45,7 +71,7 @@ def chatbot(question):
         st.session_state.thread = client.beta.threads.create(
             metadata={'session_id': st.session_state.session_id}
         )
-
+        
     # Display chat messages
     elif hasattr(st.session_state.run, 'status') and st.session_state.run.status == "completed":
         st.session_state.messages = client.beta.threads.messages.list(
@@ -86,10 +112,8 @@ def chatbot(question):
     # Handle run status
     if hasattr(st.session_state.run, 'status'):
         if st.session_state.run.status == "running":
-            with st.chat_message('assistant'):
-                st.write("Thinking ......")
+
             if st.session_state.retry_error < 3:
-                time.sleep(1)
                 st.rerun()
 
         elif st.session_state.run.status == "failed":
@@ -97,7 +121,6 @@ def chatbot(question):
             with st.chat_message('assistant'):
                 if st.session_state.retry_error < 3:
                     st.write("Run failed, retrying ......")
-                    time.sleep(3)
                     st.rerun()
                 else:
                     st.error("FAILED: The OpenAI API is currently processing too many requests. Please try again later ......")
@@ -108,7 +131,7 @@ def chatbot(question):
                 run_id=st.session_state.run.id,
             )
             if st.session_state.retry_error < 3:
-                time.sleep(3)
+                spinner()
                 st.rerun()
 
 
