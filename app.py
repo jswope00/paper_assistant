@@ -2,6 +2,8 @@ import streamlit as st
 import openai
 import uuid
 import time
+import json
+import re
 from openai import OpenAI
 import random
 import requests
@@ -43,6 +45,18 @@ def spinner():   # Animated json spinner
 #     with st.spinner(thinking_message):
 #         time.sleep(2)  # Simulate some processing time
 
+def extract_score(text):
+    # Define the regular expression pattern
+    pattern = r'"score": (\d+)'
+    
+    # Use regex to find the score pattern in the text
+    match = re.search(pattern, text)
+    
+    # If a match is found, return the score, otherwise return None
+    if match:
+        return int(match.group(1))
+    else:
+        return None
 
 def chatbot(question):
     # Initialize OpenAI client
@@ -143,8 +157,7 @@ def question_generator():
     for question in fixed_questions:
         yield question
 
-def on_submit():
-    st.session_state.current_question_index += 1
+
 
 
 def handle_question_answer():
@@ -158,20 +171,37 @@ def handle_question_answer():
     while st.session_state.current_question_index < len(fixed_questions):
         current_question_index = st.session_state.current_question_index
         current_question = fixed_questions[current_question_index]
-        # st.session_state.user_answers = get_user_answer(current_question)
+        
+        
+        # Call chatbot to interact with the user
         st.write(current_question)
-        # # user_answer = chatbot()
-        user_answers = chatbot(current_question)
+        chatbot(current_question)
+        
+        score = extract_score(str(st.session_state.messages))
+        
 
-        submit_ans = st.button(f"Next Question", on_click=on_submit)
+            # Display the extracted score
+        if score is not None:
+            st.write(f"The extracted score is: {score}")
+            # Example logic: Do not release the next question until the score is at least 2
+            if score >= 2:
+                next_quest = st.button(f"Next Question", on_click=on_submit)
 
-        if submit_ans == True or st.session_state.user_answers != "":
-            break
+                if next_quest and st.session_state.user_answers != "":
+                    st.write(current_question)
+                    break
+            else:
+                st.write("Score is less than 2. Cannot release the next question.")
+                break
         else:
+            st.write("No score found in the text.")
             break  # Break the loop if submit button is not pressed or user_ans is empty
         break
 
 
+def on_submit():
+    st.session_state.current_question_index += 1
+    
 ################ Main App #####################
 st.title('Critical Appraisal - Tea consumption reduces ovarian cancer risk')
 st.write('In this guided case study, we\'ll both read the same case study. Then, you\'ll be guided through an analysis of the paper. Let\'s begin by reading the paper!')
@@ -189,3 +219,6 @@ user_name = st.text_input(label="First, what is your name?", key="user_name")
 if st.button("Submit") == True or user_name != "":
             # st.session_state.user_name = user_name
     handle_question_answer()
+    # st.write(st.session_state)
+    # st.write("++++++++++>",st.session_state.messages)
+    
