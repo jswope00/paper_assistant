@@ -19,31 +19,82 @@ fixed_questions = [
     # Add more fixed questions as needed
 ]
 
+
+# Define instructions and rubrics for each question
+question_instructions = {
+    "What is the paper about?": {
+        "instruction": "Please provide a summary of the main topic of the paper.",
+        "rubric": {
+            "Clear Summary of the main topic": 3,
+            "Relevance to the paper but not completed": 2,
+            "Unclear and incomplete summary": 1,
+            "No summary provided": 0           
+            }
+    },
+    "What is/are the causes of obesity outlined by the authors?": {
+        "instruction": "Identify and summarize the causes of obesity as mentioned in the paper.",
+        "rubric": {
+            "Comprehensive coverage of 2 or more causes": 3,
+            "Identification of 1 cause": 2,
+            "No cause mentioned": 1,
+            "Irrelevant information": 0
+        }
+    },
+    "What is the main conclusion of the paper?": {
+        "instruction": "Summarize the primary conclusion drawn by the authors.",
+        "rubric": {
+            "Clear summary of the main conclusion": 3,
+            "Relevance to the paper but not completed": 2,
+            "Unclear and incomplete summary": 1,
+            "No conclusion provided": 0
+        }
+    },
+    "What are the limitations of the study?": {
+        "instruction": "Discuss the limitations or constraints of the research conducted.",
+        "rubric": {
+            "Identification of 2 or more limitations": 3,
+            "Identification of 1 limitation": 2,
+            "No limitations mentioned": 1,
+            "Irrelevant information": 0
+        }
+    },
+    "What are the strengths of the study?": {
+        "instruction": "Identify and discuss the strengths or positive aspects of the study.",
+        "rubric": {
+            "Identification of 2 or more strengths": 3,
+            "Identification of 1 strength": 2,
+            "No strengths mentioned": 1,
+            "Irrelevant information": 0
+        }
+    }
+}
+
 user_name = st.session_state.user_name if 'user_name' in st.session_state else None
 current_question_index = st.session_state.current_question_index if 'current_question_index' in st.session_state else 0
 
-def spinner():   # Animated json spinner
+# def spinner():   # Animated json spinner
 
-    @st.cache_data
-    def load_lottie_url(url:str):
-        r= requests.get(url)
-        if r.status_code != 200:
-            return
-        return r.json()
+#     @st.cache_data
+#     def load_lottie_url(url:str):
+#         r= requests.get(url)
+#         if r.status_code != 200:
+#             return
+#         return r.json()
 
 
-    lottie_url = "https://lottie.host/65dbbc74-ba39-44fe-97fa-1b7b7fc09cce/pa0DVwSS9k.json"
-    lottie_json = load_lottie_url(lottie_url)
+#     lottie_url = "https://lottie.host/65dbbc74-ba39-44fe-97fa-1b7b7fc09cce/pa0DVwSS9k.json"
+#     lottie_json = load_lottie_url(lottie_url)
 
-    st_lottie(lottie_json, height=200)
-    time.sleep(5)  # Simulate some processing time
+#     st_lottie(lottie_json, height=200)
+#     time.sleep(5)  # Simulate some processing time
 
-# def spinner():   # Streamlit spinner  (Uncomment this and comment the above function to use this)
-#             # Randomly choose from different "thinking" messages
-#     thinking_messages = ["Thinking...", "Generating response...", "Consulting the AI...", "Analyzing your question..."]
-#     thinking_message = random.choice(thinking_messages)
-#     with st.spinner(thinking_message):
-#         time.sleep(2)  # Simulate some processing time
+
+def spinner():   # Streamlit spinner  (Uncomment this and comment the above function to use this)
+            # Randomly choose from different "thinking" messages
+    thinking_messages = ["Thinking...", "Generating response...", "Consulting the AI...", "Analyzing your answer..."]
+    thinking_message = random.choice(thinking_messages)
+    with st.spinner(thinking_message):
+        time.sleep(2)  # Simulate some processing time
 
 def extract_score(text):
     # Define the regular expression pattern
@@ -98,16 +149,33 @@ def chatbot(question):
                         message_text = content_part.text.value
                         st.markdown(message_text)
 
+    # Check if the question exists in the instructions
+    if question in question_instructions:
+        instruction = question_instructions[question]["instruction"]
+        rubric = question_instructions[question]["rubric"]
+
+        # Send instruction to chat
+        with st.chat_message('assistant'):
+            st.write(instruction)
+
+        # Send rubric to chat
+        for criteria, score in rubric.items():
+            with st.chat_message('assistant'):
+                st.write(f"Rubric: {criteria} - Score: {score}")
+
     # Chat input and message creation with file ID
-    if prompt := st.chat_input(f"Question: {question}", key=f"chat_{question}"):
+    if prompt := st.chat_input(f"Tips: {question}", key=f"chat_{question}"):
         with st.chat_message('user'):
             st.write(prompt)
+
 
         message_data = {
             "thread_id": st.session_state.thread.id,
             "role": "user",
             "content": prompt
         }
+
+        
 
         # Include file ID in the request if available
         if "file_id" in st.session_state:
@@ -171,16 +239,26 @@ def handle_question_answer():
     while st.session_state.current_question_index < len(fixed_questions):
         current_question_index = st.session_state.current_question_index
         current_question = fixed_questions[current_question_index]
+        instruction = question_instructions.get(current_question, {}).get("instruction", "")
+        rubric = question_instructions.get(current_question, {}).get("rubric", {})
         
+        st.write(current_question)
+
+        # Display instruction to the user
+        st.write("Instruction:",instruction)
+
+        # Display rubric to the user
+        st.write("Rubric:")
+        for criteria, points in rubric.items():
+            st.write(f"- {criteria}: {points} points")
         
         # Call chatbot to interact with the user
-        st.write(current_question)
-        chatbot(current_question)
+        
+        chatbot(instruction)
         
         score = extract_score(str(st.session_state.messages))
         
-
-            # Display the extracted score
+        # Display the extracted score
         if score is not None:
             st.write(f"The extracted score is: {score}")
             # Example logic: Do not release the next question until the score is at least 2
@@ -189,12 +267,17 @@ def handle_question_answer():
 
                 if next_quest and st.session_state.user_answers != "":
                     st.write(current_question)
+                    st.write("Instruction:",instruction)
+                    st.write("Rubric:")
+                    for criteria, points in rubric.items():
+                        st.write(f"- {criteria}: {points} points")
+                    # spinner()
                     break
             else:
                 st.write("Score is less than 2. Cannot release the next question.")
                 break
         else:
-            st.write("No score found in the text.")
+            # st.write("No score found in the text.")
             break  # Break the loop if submit button is not pressed or user_ans is empty
         break
 
@@ -202,7 +285,7 @@ def handle_question_answer():
 def on_submit():
     st.session_state.current_question_index += 1
     
-################ Main App #####################
+        ################ Main App #####################
 st.title('Critical Appraisal - Tea consumption reduces ovarian cancer risk')
 st.write('In this guided case study, we\'ll both read the same case study. Then, you\'ll be guided through an analysis of the paper. Let\'s begin by reading the paper!')
 
@@ -219,6 +302,3 @@ user_name = st.text_input(label="First, what is your name?", key="user_name")
 if st.button("Submit") == True or user_name != "":
             # st.session_state.user_name = user_name
     handle_question_answer()
-    # st.write(st.session_state)
-    # st.write("++++++++++>",st.session_state.messages)
-    
