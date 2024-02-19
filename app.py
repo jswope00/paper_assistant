@@ -72,29 +72,29 @@ question_instructions = {
 user_name = st.session_state.user_name if 'user_name' in st.session_state else None
 current_question_index = st.session_state.current_question_index if 'current_question_index' in st.session_state else 0
 
-# def spinner():   # Animated json spinner
+def spinner():   # Animated json spinner
 
-#     @st.cache_data
-#     def load_lottie_url(url:str):
-#         r= requests.get(url)
-#         if r.status_code != 200:
-#             return
-#         return r.json()
-
-
-#     lottie_url = "https://lottie.host/65dbbc74-ba39-44fe-97fa-1b7b7fc09cce/pa0DVwSS9k.json"
-#     lottie_json = load_lottie_url(lottie_url)
-
-#     st_lottie(lottie_json, height=200)
-#     time.sleep(5)  # Simulate some processing time
+    @st.cache_data
+    def load_lottie_url(url:str):
+        r= requests.get(url)
+        if r.status_code != 200:
+            return
+        return r.json()
 
 
-def spinner():   # Streamlit spinner  (Uncomment this and comment the above function to use this)
-            # Randomly choose from different "thinking" messages
-    thinking_messages = ["Thinking...", "Generating response...", "Consulting the AI...", "Analyzing your answer..."]
-    thinking_message = random.choice(thinking_messages)
-    with st.spinner(thinking_message):
-        time.sleep(2)  # Simulate some processing time
+    lottie_url = "https://lottie.host/65dbbc74-ba39-44fe-97fa-1b7b7fc09cce/pa0DVwSS9k.json"
+    lottie_json = load_lottie_url(lottie_url)
+
+    st_lottie(lottie_json, height=200)
+    time.sleep(10)  # Simulate some processing time
+
+
+# def spinner():   # Streamlit spinner  (Uncomment this and comment the above function to use this)
+#             # Randomly choose from different "thinking" messages
+#     thinking_messages = ["Thinking...", "Generating response...", "Consulting the AI...", "Analyzing your answer..."]
+#     thinking_message = random.choice(thinking_messages)
+#     with st.spinner(thinking_message):
+#         time.sleep(2)  # Simulate some processing time
 
 def extract_score(text):
     # Define the regular expression pattern
@@ -242,13 +242,14 @@ def handle_question_answer():
         instruction = question_instructions.get(current_question, {}).get("instruction", "")
         rubric = question_instructions.get(current_question, {}).get("rubric", {})
         
-        st.write(current_question)
+        # st.write(current_question)
+        st.markdown(f"## **{current_question}**")
 
         # Display instruction to the user
-        st.write("Instruction:",instruction)
+        st.write("##### **Instruction:**", instruction)
 
         # Display rubric to the user
-        st.write("Rubric:")
+        st.markdown(f"##### **Rubric:**")
         for criteria, points in rubric.items():
             st.write(f"- {criteria}: {points} points")
         
@@ -266,9 +267,14 @@ def handle_question_answer():
                 next_quest = st.button(f"Next Question", on_click=on_submit)
 
                 if next_quest and st.session_state.user_answers != "":
-                    st.write(current_question)
-                    st.write("Instruction:",instruction)
-                    st.write("Rubric:")
+                    # st.write(current_question)
+                    st.markdown(f"## **{current_question}**")
+
+                    # Display instruction to the user
+                    st.write("##### **Instruction:**", instruction)
+
+                    # Display rubric to the user
+                    st.markdown(f"##### **Rubric:**")
                     for criteria, points in rubric.items():
                         st.write(f"- {criteria}: {points} points")
                     # spinner()
@@ -298,7 +304,9 @@ with open(pdf_file_path, "rb") as pdf_file:
                     file_name="Lee_journal.pdf",
                     mime="application/octet-stream")
     
-user_name = st.text_input(label="First, what is your name?", key="user_name")
+label = "**First, what is your name?**"    
+user_name = st.text_input(label=label, key="user_name")
+
 if st.button("Submit") == True or user_name != "":
             # st.session_state.user_name = user_name
     handle_question_answer()
