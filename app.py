@@ -82,11 +82,14 @@ def spinner():   # Animated json spinner
         return r.json()
 
 
-    lottie_url = "https://lottie.host/65dbbc74-ba39-44fe-97fa-1b7b7fc09cce/pa0DVwSS9k.json"
+    lottie_url = "https://lottie.host/b8e32d36-20c5-4df0-a1a2-295ce9c6b12d/aneEwjhxdm.json"
     lottie_json = load_lottie_url(lottie_url)
 
-    st_lottie(lottie_json, height=200)
-    time.sleep(10)  # Simulate some processing time
+    if lottie_json is not None:
+        st_lottie(lottie_json, height=200)
+        time.sleep(0.00001)  # Simulate some processing time
+    else:
+        st.error("Failed to load Lottie animation.")
 
 
 # def spinner():   # Streamlit spinner  (Uncomment this and comment the above function to use this)
@@ -154,17 +157,13 @@ def chatbot(question):
         instruction = question_instructions[question]["instruction"]
         rubric = question_instructions[question]["rubric"]
 
-        # Send instruction to chat
-        with st.chat_message('assistant'):
-            st.write(instruction)
-
-        # Send rubric to chat
-        for criteria, score in rubric.items():
-            with st.chat_message('assistant'):
-                st.write(f"Rubric: {criteria} - Score: {score}")
+        # Modify the prompt to include question, instruction, and rubric
+        prompt = f"Question: {question}\n\n{instruction}\n\nRubric:\n"
+        for criteria, points in rubric.items():
+            prompt += f"- {criteria}: {points} points\n"
 
     # Chat input and message creation with file ID
-    if prompt := st.chat_input(f"Tips: {question}", key=f"chat_{question}"):
+    if prompt := st.chat_input(f"Tips: {instruction}", key=f"chat_{question}"):
         with st.chat_message('user'):
             st.write(prompt)
 
@@ -186,7 +185,7 @@ def chatbot(question):
         st.session_state.run = client.beta.threads.runs.create(
             thread_id=st.session_state.thread.id,
             assistant_id=st.session_state.assistant.id,
-        )
+            instructions= f"Question: {question}\n\n Make sure to {instruction}\n\nRubric:\n- {rubric} and remember to write the score in the response.",)
         if st.session_state.retry_error < 3:
             time.sleep(1)
             st.rerun()
@@ -255,7 +254,7 @@ def handle_question_answer():
         
         # Call chatbot to interact with the user
         
-        chatbot(instruction)
+        chatbot(current_question)
         
         score = extract_score(str(st.session_state.messages))
         
